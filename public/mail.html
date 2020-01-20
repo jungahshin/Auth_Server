@@ -1,0 +1,65 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/moonspam/NanumSquare/master/nanumsquare.css">
+        <link rel="stylesheet" href="./login_style.css">
+        <title>Login</title>
+        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    </head>
+    <body>
+        <div class="inner_login">
+            <div class="login_tistory">
+                <form class = "mailForm">
+                    <input type="hidden" name="redirectUrl" value="https://blogpack.tistory.com/manage">
+                    <fieldset>
+                    <legend class="screen_out">메일 인증 코드 입력폼</legend>
+                    <div class="box_login">
+                        <div class="inp_text">
+                        <label for="loginId" class="screen_out">인증 코드</label>
+                        <input class = "mail01" type="email" id="loginId" name="loginId" placeholder="메일로 받으신 인증 코드를 입력해주세요." >
+                        </div>
+                    </div>
+                    <div class="btn_login" type = "submit">
+                        인증 확인
+                    </div>
+            </div>
+            <script>
+                var temp = location.href.split("?");
+                var data = temp[1].split(":");
+                var id = data[1];
+
+                $(".btn_login").click(function(){ 
+                    $(".mailForm").submit();
+                });            
+                $(".mailForm").submit(function (e) {
+                    e.preventDefault();
+                    var code = $(".mail01").val();
+                    console.log(code);//인증코드
+                    console.log(id);//해당 id
+                    axios.post('/mail/code', {//매일 인증코드 확인하는 API
+                        id : id,
+                        code : code,
+                    })
+                    .then(function (res) {
+                        if(res.data.success == true){
+                        //웹에 알람창으로 로그인 성공 띄우기
+                        alert("인증 성공!");
+                        document.location.href = '/login.html';
+                        }else if(res.data.success == false){
+                            alert('인증 번호가 맞지 않습니다.');
+                            window.open("mail.html?id:"+id);
+                            document.location.href = '/mail.html'; 
+                        }
+                    })
+                    .catch(function (err) {
+                        console.log(err);
+                    });
+                });
+            </script>
+        </div>        
+    </body>
+</html>
+
