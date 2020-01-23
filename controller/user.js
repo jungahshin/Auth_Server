@@ -6,10 +6,12 @@ const crypto = require('crypto-promise');
 const jwtUtils = require('../module/jwt');
 const redis = require('redis');
 const client = redis.createClient();
+const moment = require('moment');
+const nodemailer = require('nodemailer');
 
 module.exports = {
     //회원가입->이메일 보내주기(회원가입 성공 시)
-    signup:(id, pw, name, nickname, email, code) => {
+    signup:(id, pwd, name, nick, email, code) => {
         return new Promise(async(resolve, reject) => {
             //id, email이 중복인지 아닌지 확인하기
             const checkQuery = 'SELECT * from user WHERE id = ? OR email = ?';
@@ -21,11 +23,12 @@ module.exports = {
                 });
                 return;
             }
-            const insertUserQuery = 'INSERT INTO user (id, pw, salt, name, nickname, code, email, verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+            const regist_dt = moment().format('YYYY-MM-DD');
+            const insertUserQuery = 'INSERT INTO user (id, pwd, salt, name, nick, code, email, status, regist_dt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
             const buf = await crypto.randomBytes(64);
             const salt = buf.toString('base64');
-            const hashedPw = await crypto.pbkdf2(pw.toString(), salt, 1000, 32, 'SHA512');
-            const insertUserResult = await db.queryParam_Parse(insertUserQuery, [id, hashedPw.toString('base64'), salt, name, nickname, code, email, '0']);
+            const hashedPw = await crypto.pbkdf2(pwd.toString(), salt, 1000, 32, 'SHA512');
+            const insertUserResult = await db.queryParam_Parse(insertUserQuery, [id, hashedPw.toString('base64'), salt, name, nick, code, email, '0', regist_dt]);
             if(insertUserResult.length == 0){
                 resolve({
                     code : statusCode.OK,
@@ -33,6 +36,31 @@ module.exports = {
                 });
                 return;
             }
+
+            var transporter = nodemailer.createTransport({
+                service:'gmail',
+                auth: {
+                    user : 'sju03404@gmail.com',
+                    pass : 'ShinJungAh1'
+                }
+            });
+            
+            var mailOption = {
+                from : 'sju03404@gmail.com',
+                to : email,
+                subject : '인증 코드 메일입니다!',
+                text : code
+            };
+
+            transporter.sendMail(mailOption, function(err, info) {
+                if ( err ) {
+                    console.error('Send Mail error : ', err);
+                }
+                else {
+                    console.log('Message sent : ', info);
+                }
+            });
+
             resolve({
                 code : statusCode.OK,
                 json : util.successTrue(statusCode.OK, resMessage.CREATED_USER)
